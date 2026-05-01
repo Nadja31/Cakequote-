@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CakeQuote — Le bon prix, au bon moment</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#C8973A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CakeQuote">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Le bon prix, au bon moment — Application de tarification pour cake designers">
+<script>
+// Manifest inline
+const manifestData = {
+  name: "CakeQuote",
+  short_name: "CakeQuote",
+  description: "Le bon prix, au bon moment",
+  start_url: "/",
+  display: "standalone",
+  background_color: "#FBF6EE",
+  theme_color: "#C8973A",
+  orientation: "portrait",
+  icons: [{src:"icon-192.png",sizes:"192x192",type:"image/png"},{src:"icon-512.png",sizes:"512x512",type:"image/png"}]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+document.querySelector('link[rel="manifest"]').href = URL.createObjectURL(blob);
+
+// Service Worker inline
+if('serviceWorker' in navigator){
+  const swCode = `
+    const CACHE='cakequote-v1';
+    self.addEventListener('install',e=>{self.skipWaiting();});
+    self.addEventListener('activate',e=>{self.clients.claim();});
+    self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});
+  `;
+  const swBlob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).then(()=>console.log('CakeQuote PWA prête !'));
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>emailjs.init('qFxaNCTgtZUzXIFDI');</script>
+<style>
+:root {
+  --brun:#5C3317;--brun2:#7A4A28;--or:#C8973A;--or-clair:#E8C078;
+  --or-pale:#F5E8C8;--creme:#FBF6EE;--blanc:#FFFFFF;--rose:#C4856A;
+  --vert:#4A7C59;--rouge:#C04040;--muted:#8A7060;--border:rgba(200,151,58,0.2);
+  --nav:64px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Outfit',sans-serif;background:var(--creme);color:var(--brun);padding-bottom:var(--nav)}
+
+/* HEADER */
+.header{background:var(--or-pale);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 1px 20px rgba(200,151,58,.15);border-bottom:1.5px solid rgba(200,151,58,.25)}
+.logo{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--brun);font-weight:600}
+.logo em{color:var(--or);font-style:italic}
+.logo-sub{font-size:8px;color:var(--muted);letter-spacing:1px;display:block;margin-top:1px}
+.hbtn{width:34px;height:34px;border-radius:50%;background:rgba(200,151,58,.12);border:1.5px solid rgba(200,151,58,.3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--brun)}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--or-pale);display:flex;z-index:100;box-shadow:0 -1px 20px rgba(200,151,58,.15);border-top:1.5px solid rgba(200,151,58,.25)}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--muted);transition:.2s}
+.ni.active{color:var(--or)}
+.ni .icon{font-size:22px;line-height:1}
+.ni .lbl{font-size:10px;font-weight:500}
+.ni.active::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--or);margin-top:1px}
+
+/* SECTIONS */
+.sec{display:none;min-height:calc(100vh - 120px)}
+.sec.active{display:block}
+
+/* PROGRESS */
+.pgwrap{background:var(--or-pale);padding:8px 16px;position:sticky;top:56px;z-index:90;border-bottom:1px solid rgba(200,151,58,.2)}
+.pgsteps{display:flex;gap:6px;margin-bottom:5px}
+.pgs{flex:1;height:3px;border-radius:2px;background:rgba(200,151,58,.2);cursor:pointer;transition:.3s}
+.pgs.done{background:var(--or);opacity:.6}
+.pgs.active{background:var(--or)}
+.pglbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-align:center;text-transform:uppercase}
+
+/* CARDS */
+.card{background:var(--blanc);border-radius:16px;padding:20px;margin-bottom:14px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(26,18,8,.05)}
+.ctitle{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--brun);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--brun),var(--brun2));padding:22px 20px;margin-bottom:14px}
+.hnum{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--or);margin-bottom:4px}
+.htitle{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--or-pale)}
+.htitle em{color:var(--or-clair);font-style:italic}
+.hdesc{font-size:12px;color:rgba(245,232,200,.45);margin-top:3px}
+
+/* FORMS */
+.fg{margin-bottom:14px}
+.fg:last-child{margin-bottom:0}
+label{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+input,select,textarea{width:100%;padding:11px 14px;border:1.5px solid #E8DDD0;border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--brun);background:var(--creme);transition:.2s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--or);background:#fff}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+
+/* BUTTONS */
+.btn{padding:13px 20px;border-radius:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:.2s;width:100%;display:block;text-align:center}
+.btn-p{background:linear-gradient(135deg,var(--or),#A07020);color:#fff}
+.btn-s{background:var(--creme);color:var(--brun);border:1.5px solid var(--border)}
+.btn-b{background:var(--brun);color:var(--or-pale)}
+.btn-d{background:rgba(192,64,64,.1);color:var(--rouge);border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;width:auto;display:inline-block}
+.nrow{display:flex;gap:10px;padding:14px 16px}
+.nrow .btn{flex:1}
+
+/* CONTENT */
+.cnt{padding:14px 16px}
+
+/* PAGES */
+.pg{display:none}
+.pg.active{display:block}
+
+/* SLIDERS */
+.swrap{margin-bottom:14px}
+.srow{display:flex;justify-content:space-between;margin-bottom:6px}
+.slbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.sval{font-size:13px;font-weight:600;color:var(--or)}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:linear-gradient(to right,var(--or) 50%,#E8DDD0 50%);border-radius:2px;border:none;padding:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--or);box-shadow:0 2px 8px rgba(200,151,58,.4)}
+
+/* RADIO */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.rc{border:1.5px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:.2s;background:var(--blanc);text-align:center}
+.rc.sel{border-color:var(--or);background:var(--or-pale)}
+.rc .ri{font-size:20px;margin-bottom:3px}
+.rc .rl{font-size:12px;font-weight:600;color:var(--brun)}
+.rc .rs{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* PRIX */
+.pgrid{display:grid;gap:12px;padding:0 16px}
+.pc{border:2px solid var(--border);border-radius:16px;padding:16px 18px;cursor:pointer;transition:.2s;background:var(--blanc)}
+.pc.sel{border-color:var(--or);background:var(--or-pale)}
+.pch{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.pcn{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.pcp{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--brun)}
+.pcd{font-size:11px;color:var(--muted);line-height:1.5}
+.survie .pcn{color:var(--rouge)}.serein .pcn{color:var(--or)}.croissance .pcn{color:var(--vert)}
+
+/* TOTAL BOX */
+.tbox{background:var(--brun);border-radius:14px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;margin:0 16px 16px}
+.tlbl{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--or-pale)}
+.tval{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--or-clair)}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:7px 0;border-bottom:1.5px solid var(--border)}
+td{padding:10px 0;font-size:13px;color:var(--brun);border-bottom:1px solid rgba(200,151,58,.07)}
+td.amt{text-align:right;font-weight:500;color:var(--or)}
+
+/* ATELIER TABS */
+.atabs{display:flex;overflow-x:auto;background:var(--or-pale);padding:0 14px;scrollbar-width:none;border-bottom:1.5px solid rgba(200,151,58,.25)}
+.atabs::-webkit-scrollbar{display:none}
+.atab{padding:12px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s;background:none;border-left:none;border-right:none;border-top:none}
+.atab.active{color:var(--or);border-bottom-color:var(--or)}
+.apg{display:none}
+.apg.active{display:block}
+
+/* MODALS */
+.modal{display:none;position:fixed;inset:0;background:rgba(26,18,8,.85);z-index:200;align-items:flex-end;justify-content:center}
+.modal.open{display:flex}
+.mbox{background:#fff;border-radius:24px 24px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding:20px}
+.mhandle{width:40px;height:4px;background:#E8DDD0;border-radius:2px;margin:0 auto 18px}
+
+/* HISTORIQUE */
+.hc{background:var(--blanc);border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.hcref{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--or);text-transform:uppercase}
+.hcnom{font-size:15px;font-weight:600;color:var(--brun);margin:3px 0}
+.hcdet{font-size:11px;color:var(--muted)}
+.hcttc{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--or)}
+.hcbtns{display:flex;gap:8px;margin-top:10px}
+.hcbtn{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:500}
+
+/* PLANNING CAL */
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cdlbl{text-align:center;font-size:10px;font-weight:600;color:var(--muted);padding:3px 0}
+.cd{min-height:46px;border-radius:8px;background:#fff;border:1px solid #E8DDD0;padding:4px;cursor:pointer;transition:.2s}
+.cd.occ{background:rgba(200,151,58,.1);border-color:var(--or)}
+.cd.over{background:rgba(192,64,64,.1);border-color:var(--rouge)}
+.cd.tod{border:2px solid var(--brun)}
+.cdnum{font-size:11px;font-weight:500;color:var(--brun)}
+.cdh{font-size:9px;font-weight:600}
+
+/* PERTE ROW */
+.prow{display:flex;align-items:center;gap:10px;background:var(--creme);border-radius:10px;padding:10px 14px;margin-top:12px;border:1px solid var(--border)}
+
+/* CAM */
+.clg{display:flex;flex-direction:column;gap:10px}
+.cli{display:flex;align-items:center;gap:10px}
+.cld{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+@media print{.header,.bnav,.pgwrap,.nrow,.atabs{display:none!important}body{padding:0}.sec,.pg{display:block!important}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="38" height="38">
+      <defs>
+        <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#F0D080"/>
+          <stop offset="50%" stop-color="#C8973A"/>
+          <stop offset="100%" stop-color="#906A10"/>
+        </linearGradient>
+      </defs>
+      <!-- Assiette -->
+      <ellipse cx="30" cy="52" rx="22" ry="3" fill="none" stroke="url(#hg)" stroke-width="1.5"/>
+      <!-- Étage 1 -->
+      <path d="M10 38 Q30 34 50 38 L48 50 Q30 54 12 50 Z" fill="none" stroke="url(#hg)" stroke-width="1.5"/>
+      <path d="M10 38 Q17 32 24 38 Q30 32 36 38 Q43 32 50 38" fill="none" stroke="url(#hg)" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Étage 2 -->
+      <path d="M16 24 Q30 20 44 24 L42 36 Q30 40 18 36 Z" fill="none" stroke="url(#hg)" stroke-width="1.5"/>
+      <path d="M16 24 Q23 18 30 24 Q37 18 44 24" fill="none" stroke="url(#hg)" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Étage 3 -->
+      <path d="M22 13 Q30 10 38 13 L36 22 Q30 26 24 22 Z" fill="none" stroke="url(#hg)" stroke-width="1.5"/>
+      <path d="M22 13 Q26 8 30 13 Q34 8 38 13" fill="none" stroke="url(#hg)" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Nœud sommet -->
+      <path d="M26 10 Q24 5 27 6 Q30 9 30 10" fill="none" stroke="url(#hg)" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M34 10 Q36 5 33 6 Q30 9 30 10" fill="none" stroke="url(#hg)" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="30" cy="5" r="1.8" fill="url(#hg)"/>
+    </svg>
+    <div>
+      <div class="logo">Cake<em>Quote</em></div>
+      <span class="logo-sub">Le bon prix, au bon moment</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="hbtn" onclick="toggleHisto()">📋</button>
+  </div>
+</header>
+
+<!-- SECTION DEVIS -->
+<section class="sec active" id="s-devis">
+  <div class="pgwrap" id="pgwrap">
+    <div class="pgsteps">
+      <div class="pgs active" id="ps-1" onclick="goTo(1)"></div>
+      <div class="pgs" id="ps-2" onclick="goTo(2)"></div>
+      <div class="pgs" id="ps-3" onclick="goTo(3)"></div>
+      <div class="pgs" id="ps-4" onclick="goTo(4)"></div>
+      <div class="pgs" id="ps-5" onclick="goTo(5)"></div>
+      <div class="pgs" id="ps-6" onclick="goTo(6)"></div>
+    </div>
+    <div class="pglbl" id="pglbl">Étape 1/6 — Coûts de production</div>
+  </div>
+
+  <!-- PAGE 1 -->
+  <div class="pg active" id="page-1">
+    <div class="hero"><div class="hnum">Module 01</div><div class="htitle">Coûts de <em>Production</em></div><div class="hdesc">Matières premières et packaging</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">🍰 Matières Premières</div>
+        <div class="fg"><label>Coût matières (€)</label><input type="number" id="matieres" placeholder="0.00" step="0.01" oninput="calcul()"></div>
+        <p style="font-size:11px;color:var(--muted)">💡 Utilisez l'Atelier → Ingrédients pour calculer précisément</p>
+      </div>
+      <div class="card"><div class="ctitle">📦 Packaging</div>
+        <div class="fg"><label>Coût packaging (€)</label><input type="number" id="packaging" placeholder="0.00" step="0.01" oninput="calcul()"></div>
+      </div>
+      <div class="card"><div class="ctitle">🎂 Le Gâteau</div>
+        <div class="fg"><label>Nombre de parts</label><input type="number" id="parts" value="12" oninput="calcul()"></div>
+      </div>
+    </div>
+    <div class="nrow"><button class="btn btn-p" onclick="goTo(2)">Suivant →</button></div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div class="pg" id="page-2">
+    <div class="hero"><div class="hnum">Module 02</div><div class="htitle">Temps de <em>Travail</em></div><div class="hdesc">Valorisez chaque heure</div></div>
+    <div class="cnt">
+      <div class="card">
+        <div class="swrap"><div class="srow"><span class="slbl">Heures</span><span class="sval" id="hv">5h</span></div><input type="range" id="heures" min="1" max="40" value="5" oninput="updS('heures','hv','h');calcul()"></div>
+        <div class="swrap"><div class="srow"><span class="slbl">Taux horaire</span><span class="sval" id="tv">20€/h</span></div><input type="range" id="taux" min="10" max="80" value="20" oninput="updS('taux','tv','€/h');calcul()"></div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Main d'œuvre</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:36px;color:var(--brun);font-weight:600" id="recap-mo">0,00 €</div>
+      </div>
+    </div>
+    <div class="nrow"><button class="btn btn-s" onclick="goTo(1)">← Retour</button><button class="btn btn-p" onclick="goTo(3)">Suivant →</button></div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div class="pg" id="page-3">
+    <div class="hero"><div class="hnum">Module 03</div><div class="htitle">Complexité & <em>Expertise</em></div><div class="hdesc">Valorisez votre savoir-faire</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">🎨 Complexité</div>
+        <div class="rgrid">
+          <div class="rc sel" onclick="selRC(this,'coefComplexite',1.0)"><div class="ri">🍪</div><div class="rl">Simple</div><div class="rs">Basique</div></div>
+          <div class="rc" onclick="selRC(this,'coefComplexite',1.2)"><div class="ri">🌸</div><div class="rl">Intermédiaire</div><div class="rs">Quelques décos</div></div>
+          <div class="rc" onclick="selRC(this,'coefComplexite',1.5)"><div class="ri">👑</div><div class="rl">Complexe</div><div class="rs">Décors élaborés</div></div>
+          <div class="rc" onclick="selRC(this,'coefComplexite',1.8)"><div class="ri">💎</div><div class="rl">Expert</div><div class="rs">Pièce unique</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle">⭐ Niveau d'expertise</div>
+        <div class="rgrid">
+          <div class="rc sel" onclick="selRC(this,'coefNiveau',1.0)"><div class="ri">🌱</div><div class="rl">Débutante</div></div>
+          <div class="rc" onclick="selRC(this,'coefNiveau',1.1)"><div class="ri">🌿</div><div class="rl">Intermédiaire</div></div>
+          <div class="rc" onclick="selRC(this,'coefNiveau',1.25)"><div class="ri">🌳</div><div class="rl">Confirmée</div></div>
+          <div class="rc" onclick="selRC(this,'coefNiveau',1.4)"><div class="ri">🏆</div><div class="rl">Experte</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle">⏰ Délai</div>
+        <div class="rgrid">
+          <div class="rc sel" onclick="selRC(this,'coefDelai',1.0)"><div class="ri">📅</div><div class="rl">Normal</div><div class="rs">+14j</div></div>
+          <div class="rc" onclick="selRC(this,'coefDelai',1.15)"><div class="ri">⚡</div><div class="rl">Court</div><div class="rs">7-14j</div></div>
+          <div class="rc" onclick="selRC(this,'coefDelai',1.3)"><div class="ri">🚨</div><div class="rl">Urgent</div><div class="rs">3-7j</div></div>
+          <div class="rc" onclick="selRC(this,'coefDelai',1.5)"><div class="ri">🔥</div><div class="rl">Express</div><div class="rs">-3j</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="pgrid">
+      <div class="pc survie" onclick="chPrix('survie',this)" style="border-left:4px solid var(--rouge);">
+        <div class="pch"><span class="pcn" style="color:var(--rouge)">🔴 Prix Survie</span><span style="font-size:10px;color:var(--rouge)">Minimum</span></div>
+        <div class="pcp" id="res-survie" style="color:var(--rouge)">—</div>
+        <div class="pcd">Ne pas travailler à perte.</div>
+      </div>
+      <div class="pc serein sel" onclick="chPrix('serein',this)" style="border-left:4px solid var(--or);">
+        <div class="pch"><span class="pcn" style="color:var(--or)">✨ Prix Serein</span><span style="font-size:10px;color:var(--or)">Conseillé</span></div>
+        <div class="pcp" id="res-serein" style="color:var(--or)">—</div>
+        <div class="pcd">Clarté, cohérence et rentabilité.</div>
+      </div>
+      <div class="pc croissance" onclick="chPrix('croissance',this)" style="border-left:4px solid var(--vert);">
+        <div class="pch"><span class="pcn" style="color:var(--vert)">🟢 Prix Croissance</span><span style="font-size:10px;color:var(--vert)">Investir</span></div>
+        <div class="pcp" id="res-croissance" style="color:var(--vert)">—</div>
+        <div class="pcd">Évoluer et faire grandir l'activité.</div>
+      </div>
+    </div>
+    <div class="nrow"><button class="btn btn-s" onclick="goTo(2)">← Retour</button><button class="btn btn-p" onclick="goTo(4)">Suivant →</button></div>
+  </div>
+
+  <!-- PAGE 4 -->
+  <div class="pg" id="page-4">
+    <div class="hero"><div class="hnum">Module 04</div><div class="htitle">Options & <em>Résultats</em></div><div class="hdesc">Personnalisation, TVA, livraison</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">✨ Options</div>
+        <div class="fg"><label>Personnalisation (€)</label><input type="number" id="opt-perso" placeholder="0.00" step="0.01" oninput="calcul()"></div>
+        <div class="fr">
+          <div class="fg" style="margin:0"><label>Distance (km)</label><input type="number" id="livr-km" placeholder="0" oninput="calcLiv()"></div>
+          <div class="fg" style="margin:0"><label>Tarif/km (€)</label><input type="number" id="livr-tarif" placeholder="0.50" value="0.50" step="0.01" oninput="calcLiv()"></div>
+        </div>
+        <div class="fg"><label>Livraison (€)</label><input type="number" id="opt-livraison" placeholder="0.00" step="0.01" oninput="calcul()"></div>
+      </div>
+      <div class="card"><div class="ctitle">🧾 TVA & Acompte</div>
+        <div class="fg"><label>TVA</label>
+          <select id="tva-actif" onchange="calcul()">
+            <option value="0">Sans TVA</option><option value="5.5">5,5%</option><option value="10">10%</option><option value="20">20%</option>
+          </select>
+        </div>
+        <div class="fg"><label>Acompte (%)</label><input type="number" id="acompte-pct" value="30" min="0" max="100" oninput="calcul()"></div>
+        <div style="background:var(--creme);border-radius:10px;padding:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:12px;color:var(--muted)">Acompte</span><span style="font-size:12px;font-weight:600" id="acompte-montant">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--muted)">Solde</span><span style="font-size:12px;font-weight:600" id="solde-montant">—</span></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle">💬 Notes</div><textarea id="opt-notes" placeholder="Informations complémentaires..." rows="3" style="resize:none"></textarea></div>
+    </div>
+    <div class="nrow"><button class="btn btn-s" onclick="goTo(3)">← Retour</button><button class="btn btn-p" onclick="goTo(5)">Suivant →</button></div>
+  </div>
+
+  <!-- PAGE 5 -->
+  <div class="pg" id="page-5">
+    <div class="hero"><div class="hnum">Module 05</div><div class="htitle">Référence <em>Client</em></div><div class="hdesc">Les détails de la commande</div></div>
+    <div class="cnt">
+      <div class="card" style="background:var(--or-pale);border:1px solid var(--or);">
+        <div style="font-size:12px;color:var(--brun);">🏪 Vos informations boutique sont récupérées automatiquement depuis votre <strong>Profil</strong>.</div>
+        <button class="btn btn-b" style="margin-top:10px;padding:9px 16px;font-size:12px;" onclick="swSec('profil')">→ Modifier mon Profil</button>
+      </div>
+      <div class="card"><div class="ctitle">👤 Informations client</div>
+        <div class="fg"><label>Nom du client</label><input type="text" id="client-nom" placeholder="Marie Dupont"></div>
+        <div class="fg"><label>E-mail client</label><input type="email" id="client-email" placeholder="marie@email.fr"></div>
+        <div class="fr">
+          <div class="fg" style="margin:0"><label>Téléphone</label><input type="tel" id="client-tel" placeholder="06..."></div>
+          <div class="fg" style="margin:0"><label>Date événement</label><input type="date" id="client-date"></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle">🥧 Référence gâteau</div>
+        <div class="fr">
+          <div class="fg" style="margin:0"><label>Thème</label><input type="text" id="cake-theme" placeholder="Mariage Rose Gold"></div>
+          <div class="fg" style="margin:0"><label>Saveur</label><input type="text" id="cake-saveur" placeholder="Vanille..."></div>
+        </div>
+        <div class="fr">
+          <div class="fg" style="margin:0"><label>Étages</label><select id="cake-etages"><option>1 étage</option><option>2 étages</option><option>3 étages</option><option>4 étages</option><option>5+</option></select></div>
+          <div class="fg" style="margin:0"><label>Parts</label><input type="text" id="cake-parts-ref" placeholder="12 parts"></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle">🔢 Numéro du devis</div>
+        <div class="fg"><label>Référence</label><input type="text" id="b-devis-num" placeholder="2026-001"></div>
+      </div>
+    </div>
+    <div class="nrow"><button class="btn btn-s" onclick="goTo(4)">← Retour</button><button class="btn btn-p" onclick="goTo(6)">Voir le devis →</button></div>
+  </div>
+
+  <!-- PAGE 6 -->
+  <div class="pg" id="page-6">
+    <div class="hero"><div class="hnum">Module 06</div><div class="htitle">Mon <em>Devis</em></div><div class="hdesc">Aperçu et génération PDF</div></div>
+
+    <div id="dvview" style="margin:14px 16px;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+      <div style="background:var(--brun);padding:20px 22px;display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--or-clair);font-weight:600" id="dv-bnom">Votre boutique</div>
+          <div style="color:rgba(245,232,200,.35);font-size:9px;margin-top:2px">Création sur mesure</div>
+          <div style="color:rgba(245,232,200,.3);font-size:9px;margin-top:5px;line-height:1.8"><span id="dv-email"></span><br><span id="dv-tel"></span><br><span id="dv-ville"></span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:var(--or);font-size:11px;font-weight:700;letter-spacing:1px" id="dv-ref">DEVIS 001</div>
+          <div style="color:rgba(245,232,200,.35);font-size:10px;margin-top:3px" id="dv-date"></div>
+          <div style="color:rgba(245,232,200,.2);font-size:9px;margin-top:3px">VALABLE 15 JOURS</div>
+        </div>
+      </div>
+      <div style="padding:18px 22px;background:#fff">
+        <div style="margin-bottom:16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--or);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)">Informations client</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px 14px">
+            <div><div style="font-size:9px;color:var(--muted)">Nom</div><div style="font-size:12px;font-weight:500" id="dv-cnom">—</div></div>
+            <div><div style="font-size:9px;color:var(--muted)">E-mail</div><div style="font-size:12px;font-weight:500" id="dv-cemail">—</div></div>
+            <div><div style="font-size:9px;color:var(--muted)">Téléphone</div><div style="font-size:12px;font-weight:500" id="dv-ctel">—</div></div>
+            <div><div style="font-size:9px;color:var(--muted)">Date</div><div style="font-size:12px;font-weight:500" id="dv-cdate">—</div></div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--or);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)">Référence projet</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px 14px">
+            <div><div style="font-size:9px;color:var(--muted)">Thème</div><div style="font-size:12px;font-weight:500" id="dv-theme">—</div></div>
+            <div><div style="font-size:9px;color:var(--muted)">Saveur</div><div style="font-size:12px;font-weight:500" id="dv-saveur">—</div></div>
+            <div><div style="font-size:9px;color:var(--muted)">Étages</div><div style="font-size:12px;font-weight:500" id="dv-etages">—</div></div>
+            <div><div style="font-size:9px;color:var(--muted)">Parts</div><div style="font-size:12px;font-weight:500" id="dv-parts">—</div></div>
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--or);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--border)">Détail prestation</div>
+          <table><thead><tr><th>Désignation</th><th style="text-align:right">Montant HT</th></tr></thead><tbody id="dv-lignes"></tbody></table>
+        </div>
+        <div style="background:var(--brun);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px" id="dv-tvarow"><span style="color:rgba(245,232,200,.5);font-size:11px">Total HT</span><span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--or-clair)" id="dv-ht">—</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px" id="dv-tvaline"><span style="color:rgba(245,232,200,.5);font-size:11px" id="dv-tvalbl">TVA</span><span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--or-clair)" id="dv-tvaval">—</span></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(200,151,58,.3);padding-top:8px"><span style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--or-pale)">Total TTC</span><span style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--or)" id="dv-total">—</span></div>
+        </div>
+        <div style="background:var(--creme);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:14px" id="dv-modal"></div>
+        <div style="border-top:1px solid var(--border);padding-top:12px" class="cgv-section">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--brun);text-align:center;margin-bottom:8px">Conditions Générales de Vente</div>
+          <div style="font-size:9px;color:var(--muted);line-height:1.7">
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 1</strong> Devis valable 15 jours. Réservation confirmée après acompte.</p>
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 2</strong> Acompte exigé à la réservation. Solde dû 7 jours avant l'événement.</p>
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 3</strong> Acompte non remboursable. Annulation moins de 7j : solde reste dû.</p>
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 4</strong> Créations restent propriété du Prestataire pour communication.</p>
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 5</strong> Allergies à signaler avant confirmation.</p>
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 6</strong> Responsabilité cesse à la remise.</p>
+            <p style="margin-bottom:5px"><strong style="color:var(--brun)">Art. 7</strong> Toute réclamation doit être formulée sous 24h avec photos à l'appui.</p>
+          </div>
+          <div style="text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:9px;color:var(--muted);line-height:1.8;" id="dv-siret">© 2026 CakeQuote</div>
+            <div style="width:40px;height:0.8px;background:var(--or);opacity:0.3;margin:10px auto;"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="70" height="70" style="display:block;margin:0 auto 8px;">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+              <ellipse cx="50" cy="82" rx="22" ry="3" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+              <path d="M28 66 Q50 62 72 66 L70 80 Q50 84 30 80 Z" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+              <path d="M28 66 Q35 60 42 66 Q50 60 58 66 Q65 60 72 66" fill="none" stroke="#C8973A" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M34 50 Q50 46 66 50 L64 64 Q50 68 36 64 Z" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+              <path d="M34 50 Q42 44 50 50 Q58 44 66 50" fill="none" stroke="#C8973A" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M40 36 Q50 32 60 36 L58 48 Q50 52 42 48 Z" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+              <path d="M40 36 Q45 30 50 36 Q55 30 60 36" fill="none" stroke="#C8973A" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M46 32 Q44 26 47 28 Q50 31 50 32" fill="none" stroke="#C8973A" stroke-width="1" stroke-linecap="round"/>
+              <path d="M54 32 Q56 26 53 28 Q50 31 50 32" fill="none" stroke="#C8973A" stroke-width="1" stroke-linecap="round"/>
+              <circle cx="50" cy="25" r="1.5" fill="#C8973A"/>
+            </svg>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#C8973A;letter-spacing:2px;">CakeQuote</div>
+            <div style="font-size:8px;color:var(--muted);letter-spacing:1px;margin-top:3px;font-style:italic;">De la création à la facturation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nrow">
+      <button class="btn btn-s" onclick="goTo(5)">← Retour</button>
+      <button class="btn btn-p" id="btn-sauvegarder" onclick="sauvegarder()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION ATELIER -->
+<section class="sec" id="s-atelier">
+  <div class="atabs">
+    <button class="atab active" onclick="swAt('ingredients',this)">🥄 Ingrédients</button>
+    <button class="atab" onclick="swAt('convertisseur',this)">📐 Convertisseur</button>
+    <button class="atab" onclick="swAt('chrono',this)">⏱️ Chrono</button>
+    <button class="atab" onclick="swAt('pitch',this)">💬 Pitch</button>
+    <button class="atab" onclick="swAt('graphique',this)">🥧 Coûts</button>
+  </div>
+
+  <!-- INGRÉDIENTS -->
+  <div class="apg active" id="at-ingredients">
+    <div class="hero"><div class="hnum">Atelier 01</div><div class="htitle">Gestion des <em>Ingrédients</em></div><div class="hdesc">Réserve, composition, recettes</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">🏪 Ma Réserve</div>
+        <div class="fr"><div class="fg" style="margin:0"><label>Nom</label><input type="text" id="res-nom" placeholder="Ex: Chocolat"></div><div class="fg" style="margin:0"><label>Prix (€)</label><input type="number" id="res-prix" step="0.01" placeholder="0.00"></div></div>
+        <div class="fg"><label>Unité</label><select id="res-unite"><option value="kg">Kilo (kg)</option><option value="L">Litre (L)</option><option value="unite">Unité</option></select></div>
+        <button class="btn btn-p" onclick="ajRes()">+ Enregistrer</button>
+        <div id="res-liste" style="margin-top:12px"></div>
+      </div>
+      <div class="card"><div class="ctitle">📋 Composition de la Recette</div>
+        <div class="fr">
+          <div class="fg" style="margin:0"><label>Ingrédient</label><select id="rec-sel" onchange="autoQ()"><option value="">Choisir...</option></select></div>
+          <div class="fg" style="margin:0"><label>Quantité <span id="qunit" style="color:var(--or)"></span></label><input type="number" id="rec-qte" placeholder="250"></div>
+        </div>
+        <button class="btn btn-p" onclick="ajRec()">+ Ajouter</button>
+        <table style="margin-top:12px"><thead><tr><th>Ingrédient</th><th>Qté</th><th style="text-align:right">Coût</th><th style="width:28px"></th></tr></thead><tbody id="rec-body"></tbody></table>
+        <div class="prow"><span style="font-size:11px;color:var(--muted);flex:1">🗑️ Marge perte :</span><input type="number" id="perte-pct" value="5" style="width:55px;text-align:center" oninput="calcTotal()"><span style="font-size:11px;color:var(--muted)">%</span></div>
+      </div>
+    </div>
+    <div class="tbox"><span class="tlbl">Coût Total Matières</span><span class="tval" id="total-mat">0,00 €</span></div>
+    <div class="cnt" style="padding-top:0"><button class="btn btn-b" onclick="importDevis()" style="margin-top:8px">↗️ Importer dans le Devis</button></div>
+  </div>
+
+  <!-- CONVERTISSEUR -->
+  <div class="apg" id="at-convertisseur">
+    <div class="hero"><div class="hnum">Atelier 02</div><div class="htitle"><em>Convertisseur</em> de Taille</div><div class="hdesc">Adaptez votre recette au diamètre</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">📐 Diamètres</div>
+        <div style="display:flex;align-items:center;gap:12px;background:var(--or-pale);border-radius:12px;padding:14px">
+          <div style="flex:1"><label>Base (cm)</label><input type="number" id="db" value="15" oninput="rcConv()"></div>
+          <div style="font-size:20px;color:var(--or);font-weight:bold;padding-top:20px">→</div>
+          <div style="flex:1"><label>Cible (cm)</label><input type="number" id="dc" value="20" oninput="rcConv()"></div>
+        </div>
+        <div style="text-align:center;background:var(--brun);color:var(--or-clair);border-radius:10px;padding:9px;margin-top:10px;font-size:12px" id="ratio-disp">Ratio : <strong>1,78×</strong></div>
+      </div>
+      <div class="card"><div class="ctitle">🥚 Recette convertie</div>
+        <div id="conv-empty" style="text-align:center;padding:14px;color:var(--muted);font-size:12px;font-style:italic">⚠️ Ajoutez d'abord des ingrédients dans la Recette.</div>
+        <table id="conv-table" style="display:none"><thead><tr><th>Ingrédient</th><th>Base (∅<span id="th-db">15</span>)</th><th>Cible (∅<span id="th-dc">20</span>)</th><th style="text-align:right">Prix</th></tr></thead><tbody id="conv-body"></tbody></table>
+      </div>
+    </div>
+    <div class="tbox"><span class="tlbl">Coût recette convertie</span><span class="tval" id="conv-total">0,00 €</span></div>
+    <div class="cnt" style="padding-top:0">
+      <button class="btn btn-b" onclick="importerConv()" style="margin-top:8px">↗️ Importer dans le Devis</button>
+    </div>
+  </div>
+
+  <!-- CHRONO -->
+  <div class="apg" id="at-chrono">
+    <div class="hero"><div class="hnum">Atelier 03</div><div class="htitle">Chrono <em>Coach</em></div><div class="hdesc">Mesurez votre rentabilité en direct</div></div>
+    <div class="cnt">
+      <div class="card">
+        <div class="fr"><div class="fg" style="margin:0"><label>Temps prévu (h)</label><input type="number" id="ch-prev" value="5" min="0.5" step="0.5"></div><div class="fg" style="margin:0"><label>Taux horaire (€/h)</label><input type="number" id="ch-taux" value="20"></div></div>
+        <div style="text-align:center;padding:16px 0">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:60px;color:var(--brun);letter-spacing:3px;line-height:1" id="ch-disp">00:00:00</div>
+          <div style="font-style:italic;color:var(--or);font-size:12px;margin-top:7px;min-height:18px" id="ch-motiv">Prêt à démarrer 🍰</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="btn btn-p" id="ch-btn" onclick="togCh()" style="flex:2">▶ Démarrer</button>
+          <button class="btn btn-s" onclick="resetCh()" style="flex:1">↺</button>
+          <button class="btn btn-b" onclick="stopCh()" style="flex:1">⏹</button>
+        </div>
+        <div style="background:#E8DDD0;border-radius:4px;height:6px;overflow:hidden"><div id="ch-prog" style="height:100%;background:var(--or);width:0%;transition:.5s"></div></div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:5px" id="ch-pct">0% du temps prévu</div>
+      </div>
+      <div class="card" id="ch-analyse" style="display:none"><div class="ctitle">📊 Analyse</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">PRÉVU</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--brun)" id="an-prev">—</div></div>
+          <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">RÉEL</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--brun)" id="an-reel">—</div></div>
+          <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">GAIN</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--or)" id="an-gain">—</div></div>
+          <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">TAUX RÉEL</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--or)" id="an-taux">—</div></div>
+        </div>
+        <div id="an-verdict" style="background:var(--or-pale);border-radius:10px;padding:12px;font-size:12px;color:var(--brun);line-height:1.7;border-left:4px solid var(--or)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PITCH -->
+  <div class="apg" id="at-pitch">
+    <div class="hero"><div class="hnum">Atelier 04</div><div class="htitle">Mon <em>Argumentaire</em></div><div class="hdesc">Défendez votre prix face au refus</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">📋 Contexte</div>
+        <div class="fr"><div class="fg" style="margin:0"><label>Prix devis (€)</label><input type="number" id="pt-prix" placeholder="280" oninput="genPitch()"></div><div class="fg" style="margin:0"><label>Heures</label><input type="number" id="pt-h" placeholder="8" oninput="genPitch()"></div></div>
+        <div class="fr"><div class="fg" style="margin:0"><label>Complexité</label><select id="pt-cx" onchange="genPitch()"><option value="simple">Simple</option><option value="moyen">Moyen</option><option value="complexe" selected>Complexe</option><option value="expert">Expert</option></select></div><div class="fg" style="margin:0"><label>Niveau</label><select id="pt-nv" onchange="genPitch()"><option value="debutante">Débutante</option><option value="intermediaire">Intermédiaire</option><option value="confirmee" selected>Confirmée</option><option value="experte">Experte</option></select></div></div>
+      </div>
+      <div class="card" id="pt-res" style="display:none"><div class="ctitle">🛡️ Vos arguments</div>
+        <div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--rouge);margin-bottom:7px">🔴 "C'EST TROP CHER"</div><div id="pt-a1" style="background:var(--creme);border-radius:10px;padding:12px;border-left:4px solid var(--or);font-size:12px;color:var(--brun);line-height:1.7"></div></div>
+        <div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--rouge);margin-bottom:7px">🔴 "J'AI VU MOINS CHER"</div><div id="pt-a2" style="background:var(--creme);border-radius:10px;padding:12px;border-left:4px solid var(--or);font-size:12px;color:var(--brun);line-height:1.7"></div></div>
+        <div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--rouge);margin-bottom:7px">🔴 "FAITES UN GESTE"</div><div id="pt-a3" style="background:var(--creme);border-radius:10px;padding:12px;border-left:4px solid var(--or);font-size:12px;color:var(--brun);line-height:1.7"></div></div>
+        <div style="background:var(--brun);border-radius:12px;padding:14px 16px"><div style="font-size:9px;letter-spacing:1px;color:rgba(245,232,200,.4);margin-bottom:5px">💡 RAPPEL</div><div style="font-size:12px;color:var(--or-pale);line-height:1.7" id="pt-rp"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRAPHIQUE -->
+  <div class="apg" id="at-graphique">
+    <div class="hero"><div class="hnum">Atelier 05</div><div class="htitle">Répartition des <em>Coûts</em></div><div class="hdesc">Visualisez où va chaque euro</div></div>
+    <div class="cnt">
+      <div class="card"><div class="ctitle">⚙️ Paramètres</div>
+        <div style="background:var(--or-pale);border-radius:10px;padding:9px 12px;font-size:11px;color:var(--muted);margin-bottom:12px">💡 Récupéré depuis votre devis automatiquement.</div>
+        <div class="fr"><div class="fg" style="margin:0"><label>Heures</label><input type="number" id="gh" placeholder="8" oninput="rGraph()"></div><div class="fg" style="margin:0"><label>Taux (€/h)</label><input type="number" id="gt" placeholder="20" oninput="rGraph()"></div></div>
+        <div class="fr"><div class="fg" style="margin:0"><label>Packaging (€)</label><input type="number" id="gp" placeholder="8" oninput="rGraph()"></div><div class="fg" style="margin:0"><label>Prix vente (€)</label><input type="number" id="gpx" placeholder="280" oninput="rGraph()"></div></div>
+      </div>
+      <div class="card"><div class="ctitle">📊 Répartition</div>
+        <div id="gvide" style="text-align:center;padding:14px;color:var(--muted);font-size:12px;font-style:italic;display:none">⚠️ Renseignez les paramètres.</div>
+        <div style="display:flex;justify-content:center;margin-bottom:18px">
+          <svg id="gcam" width="190" height="190" viewBox="0 0 190 190"><g id="gslices"></g><text x="95" y="90" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="11" fill="#8A7060">Prix vente</text><text id="gctot" x="95" y="108" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="17" font-weight="600" fill="#C8973A">—</text></svg>
+        </div>
+        <div id="gleg" class="clg"></div>
+      </div>
+      <div class="card" id="grec-card" style="display:none"><div class="ctitle">💰 Récapitulatif</div><div id="grec"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION PLANNING -->
+<section class="sec" id="s-planning">
+  <div class="hero"><div class="hnum">Planning</div><div class="htitle">Mon <em>Agenda</em></div><div class="hdesc">Charge de travail et rentabilité</div></div>
+  <div class="cnt">
+    <div class="card"><div class="ctitle">⚙️ Heures disponibles</div>
+      <div class="fr"><div class="fg" style="margin:0"><label>Semaine (h/j)</label><input type="number" id="pl-sem" value="2" oninput="rPlan()"></div><div class="fg" style="margin:0"><label>Week-end (h/j)</label><input type="number" id="pl-we" value="8" oninput="rPlan()"></div></div>
+    </div>
+    <div class="card"><div class="ctitle">➕ Ajouter commande</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Les devis sauvegardés s'importent automatiquement.</p>
+      <div class="fr"><div class="fg" style="margin:0"><label>Nom projet</label><input type="text" id="pl-nom" placeholder="Wedding Cake"></div><div class="fg" style="margin:0"><label>Date</label><input type="date" id="pl-date"></div></div>
+      <div class="fr"><div class="fg" style="margin:0"><label>Temps (h)</label><input type="number" id="pl-h" placeholder="6" step="0.5"></div><div class="fg" style="margin:0"><label>Prix (€)</label><input type="number" id="pl-px" placeholder="280"></div></div>
+      <button class="btn btn-p" onclick="ajCmd()">+ Ajouter</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <button class="btn btn-s" style="width:auto;padding:7px 12px" onclick="chMois(-1)">◀</button>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--brun);font-weight:600" id="pl-titre">Avril 2026</div>
+        <button class="btn btn-s" style="width:auto;padding:7px 12px" onclick="chMois(1)">▶</button>
+      </div>
+      <div class="cgrid" style="margin-bottom:5px">
+        <div class="cdlbl">L</div><div class="cdlbl">M</div><div class="cdlbl">M</div><div class="cdlbl">J</div><div class="cdlbl">V</div><div class="cdlbl">S</div><div class="cdlbl">D</div>
+      </div>
+      <div class="cgrid" id="pl-cal"></div>
+    </div>
+    <div class="card"><div class="ctitle">📋 Commandes du mois</div><div id="pl-liste"><p style="font-size:12px;color:var(--muted);font-style:italic">Aucune commande ce mois.</p></div></div>
+  </div>
+</section>
+
+<!-- SECTION PROFIL -->
+<section class="sec" id="s-profil">
+  <div class="hero"><div class="hnum">Mon Profil</div><div class="htitle">Ma <em>Boutique</em></div><div class="hdesc">Informations permanentes</div></div>
+  <div class="cnt">
+    <div class="card"><div class="ctitle">🏪 Informations</div>
+      <div class="fg"><label>Nom boutique</label><input type="text" id="p-nom" placeholder="Sweet Dreams" oninput="syncP()"></div>
+      <div class="fg"><label>E-mail</label><input type="email" id="p-email" placeholder="contact@..." oninput="syncP()"></div>
+      <div class="fr"><div class="fg" style="margin:0"><label>Téléphone</label><input type="tel" id="p-tel" placeholder="06..." oninput="syncP()"></div><div class="fg" style="margin:0"><label>Ville</label><input type="text" id="p-ville" placeholder="Paris" oninput="syncP()"></div></div>
+      <div class="fg"><label>SIRET</label><input type="text" id="p-siret" placeholder="123 456 789" oninput="syncP()"></div>
+    </div>
+    <div class="card"><div class="ctitle">📄 Légal</div>
+      <button class="btn btn-s" onclick="document.getElementById('cgu-modal').classList.add('open')">📄 Conditions d'utilisation</button>
+
+      <!-- LOGO FINAL -->
+      <div style="text-align:center;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="160" height="160" style="display:block;margin:0 auto 6px;">
+          <defs>
+            <linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#F0D080"/>
+              <stop offset="50%" stop-color="#C8973A"/>
+              <stop offset="100%" stop-color="#906A10"/>
+            </linearGradient>
+          </defs>
+          <!-- Cercle -->
+          <circle cx="100" cy="100" r="88" fill="none" stroke="url(#pg)" stroke-width="1.8"/>
+          <!-- Assiette -->
+          <ellipse cx="100" cy="162" rx="44" ry="5" fill="none" stroke="url(#pg)" stroke-width="1.8"/>
+          <!-- ÉTAGE 1 -->
+          <path d="M58 132 Q100 126 142 132 L140 158 Q100 164 60 158 Z" fill="none" stroke="url(#pg)" stroke-width="1.8"/>
+          <path d="M58 132 Q70 124 82 132 Q91 124 100 132 Q109 124 118 132 Q130 124 142 132" fill="none" stroke="url(#pg)" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- ÉTAGE 2 -->
+          <path d="M68 102 Q100 96 132 102 L130 130 Q100 136 70 130 Z" fill="none" stroke="url(#pg)" stroke-width="1.8"/>
+          <path d="M68 102 Q80 94 92 102 Q100 94 108 102 Q120 94 132 102" fill="none" stroke="url(#pg)" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- ÉTAGE 3 -->
+          <path d="M78 75 Q100 69 122 75 L120 100 Q100 106 80 100 Z" fill="none" stroke="url(#pg)" stroke-width="1.8"/>
+          <path d="M78 75 Q89 67 100 75 Q111 67 122 75" fill="none" stroke="url(#pg)" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- Nœud sommet -->
+          <path d="M93 67 Q90 58 96 60 Q100 64 100 67" fill="none" stroke="url(#pg)" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M107 67 Q110 58 104 60 Q100 64 100 67" fill="none" stroke="url(#pg)" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="100" cy="57" r="2.5" fill="url(#pg)"/>
+          <circle cx="91" cy="59" r="1.8" fill="url(#pg)"/>
+          <circle cx="109" cy="59" r="1.8" fill="url(#pg)"/>
+        </svg>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;letter-spacing:3px;color:#C8973A;margin-top:4px;">CakeQuote</div>
+        <div style="font-size:10px;color:#8A6020;letter-spacing:2px;margin-top:6px;font-style:italic;">Le bon prix, au bon moment</div>
+        <div style="width:50px;height:1px;background:#C8973A;opacity:0.4;margin:10px auto;"></div>
+        <div style="font-size:8px;color:#6A4A20;letter-spacing:2.5px;text-transform:uppercase;">De la création à la facturation</div>
+      </div>
+
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px">© 2026 CakeQuote — Tous droits réservés</p>
+    </div>
+  </div>
+</section>
+
+<!-- MODALS -->
+<div class="modal" id="histo-modal" onclick="if(event.target===this)toggleHisto()">
+  <div class="mbox">
+    <div class="mhandle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--brun)">Mes Devis</div>
+      <button onclick="toggleHisto()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">×</button>
+    </div>
+    <div id="histo-liste"><p style="color:var(--muted);font-size:13px;font-style:italic">Aucun devis sauvegardé.</p></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-p" onclick="nvDevis()">✨ Nouveau</button>
+      <button class="btn" onclick="exportExcel()" style="background:rgba(74,124,89,.12);color:var(--vert);border:1.5px solid rgba(74,124,89,.3)">📊 Excel</button>
+      <button class="btn" onclick="vidHisto()" style="background:rgba(192,64,64,.1);color:var(--rouge);border:none">🗑️ Effacer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="conflit-modal" onclick="if(event.target===this)fConflit()">
+  <div class="mbox"><div class="mhandle"></div><div id="conflit-cont"></div></div>
+</div>
+
+<div class="modal" id="cgu-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="mbox">
+    <div class="mhandle"></div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--brun);margin-bottom:14px">CGU — CakeQuote</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.8">
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 1</strong> CakeQuote est réservé aux cake designers professionnels.</p>
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 2</strong> Propriété intellectuelle protégée. Reproduction interdite sans autorisation.</p>
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 3</strong> Usage professionnel personnel uniquement. Revente interdite.</p>
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 4</strong> Données stockées localement. Aucune collecte externe.</p>
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 5</strong> Prix indicatifs. CakeQuote décline toute responsabilité sur les décisions commerciales.</p>
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 6</strong> Abonnement 29,99€/mois. Non remboursable.</p>
+      <p style="margin-bottom:8px"><strong style="color:var(--brun)">Art. 7</strong> Droit français applicable.</p>
+      <p style="text-align:center;margin-top:14px;font-size:10px">© 2026 CakeQuote — De la création à la facturation</p>
+    </div>
+    <button class="btn btn-b" style="margin-top:14px" onclick="document.getElementById('cgu-modal').classList.remove('open')">Fermer</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="ni active" id="ni-devis" onclick="swSec('devis')"><span class="icon">🏠</span><span class="lbl">Devis</span></button>
+  <button class="ni" id="ni-atelier" onclick="swSec('atelier')"><span class="icon">🔧</span><span class="lbl">Atelier</span></button>
+  <button class="ni" id="ni-planning" onclick="swSec('planning')"><span class="icon">📅</span><span class="lbl">Planning</span></button>
+  <button class="ni" id="ni-profil" onclick="swSec('profil')"><span class="icon">👤</span><span class="lbl">Profil</span></button>
+</nav>
+
+<script>
+const E=id=>document.getElementById(id);
+const ST=(id,v)=>{const e=E(id);if(e)e.textContent=v};
+const GV=id=>E(id)?.value||'';
+const GN=id=>parseFloat(E(id)?.value)||0;
+const EUR=n=>typeof n==='number'?n.toFixed(2).replace('.',',')+' €':'—';
+
+// STATE
+const S={cc:1,cn:1,cd:1,px:'serein',ps:0,pr:0,pc:0};
+let curP=1;
+let histo=JSON.parse(localStorage.getItem('cq_histo')||'[]');
+let ndv=histo.length+1;
+
+// SECTIONS
+function swSec(n){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  E('s-'+n).classList.add('active');
+  E('ni-'+n).classList.add('active');
+  window.scrollTo(0,0);
+  if(n==='planning')rPlan();
+  if(n==='atelier'){
+    const d=JSON.parse(localStorage.getItem('cq_dd')||'{}');
+    if(d.heures&&!E('gh')?.value){
+      if(E('gh'))E('gh').value=d.heures;
+      if(E('gt'))E('gt').value=d.taux||20;
+      if(E('gp'))E('gp').value=d.packaging||0;
+      if(E('gpx')&&d.prixSerein)E('gpx').value=d.prixSerein.toFixed(2);
+    }
+    rGraph();
+  }
+}
+
+// ATELIER TABS
+function swAt(n,el){
+  document.querySelectorAll('.apg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  E('at-'+n).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo(0,0);
+  if(n==='graphique'){rece=JSON.parse(localStorage.getItem('cq_rece')||'[]');rGraph();}
+  if(n==='convertisseur'){rece=JSON.parse(localStorage.getItem('cq_rece')||'[]');rcConv();}
+}
+
+// DEVIS PAGES
+const MLBL={1:'Coûts de production',2:'Temps de travail',3:'Complexité & Expertise',4:'Options & Résultats',5:'Référence Client',6:'Mon Devis'};
+function goTo(n){
+  E('page-'+curP).classList.remove('active');
+  curP=n;
+  E('page-'+n).classList.add('active');
+  for(let i=1;i<=6;i++){const p=E('ps-'+i);if(!p)continue;p.classList.remove('active','done');if(i<n)p.classList.add('done');else if(i===n)p.classList.add('active');}
+  const l=E('pglbl');if(l)l.textContent=`Étape ${n}/6 — ${MLBL[n]}`;
+  if(n===3||n===4)calcul();
+  if(n===6){updDv();injBout();}
+  window.scrollTo(0,0);
+}
+
+// SLIDERS
+function updS(id,vid,sfx){
+  const el=E(id);const v=el.value;
+  const pct=((v-el.min)/(el.max-el.min))*100;
+  el.style.background=`linear-gradient(to right,var(--or) ${pct}%,#E8DDD0 ${pct}%)`;
+  ST(vid,v+sfx);
+}
+
+// RADIO
+function selRC(el,k,v){
+  el.closest('.card').querySelectorAll('.rc').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');S[k]=v;calcul();
+}
+function chPrix(t,el){
+  document.querySelectorAll('.pc').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');S.px=t;
+}
+
+// CALCUL
+function calcul(){
+  const mat=GN('matieres'),pkg=GN('packaging'),mo=GN('heures')*GN('taux');
+  const parts=GN('parts')||1,perso=GN('opt-perso'),liv=GN('opt-livraison');
+  const base=mat+pkg+mo;
+  const sv=(base*1.15)+perso+liv;
+  const sr=(base*S.cc*S.cn*S.cd*1.35)+perso+liv;
+  const cr=(base*S.cc*S.cn*S.cd*1.65)+perso+liv;
+  S.ps=sv;S.pr=sr;S.pc=cr;
+  localStorage.setItem('cq_dd',JSON.stringify({matieres:mat,packaging:pkg,heures:GN('heures'),taux:GN('taux'),mainOeuvre:mo,prixSurvie:sv,prixSerein:sr,prixCroissance:cr,prixChoisi:S.px}));
+  ST('recap-mo',EUR(mo));ST('res-survie',EUR(sv));ST('res-serein',EUR(sr));ST('res-croissance',EUR(cr));
+  const pb=S['p'+S.px.charAt(0)]||sr;
+  const tvp=parseFloat(E('tva-actif')?.value)||0;
+  const tva=pb*(tvp/100);const ttc=pb+tva;
+  const ap=GN('acompte-pct')/100;
+  ST('acompte-montant',EUR(ap*ttc));ST('solde-montant',EUR(ttc-(ap*ttc)));
+}
+function calcLiv(){const km=GN('livr-km'),t=GN('livr-tarif')||0.5;if(E('opt-livraison'))E('opt-livraison').value=(km*t).toFixed(2);calcul();}
+
+// DEVIS UPDATE
+function injBout(){
+  const d=JSON.parse(localStorage.getItem('cq_bout')||'{}');
+  ST('dv-bnom',d.nom||'Votre boutique');
+  ST('dv-email',d.email||'');
+  ST('dv-tel',d.tel||'');
+  ST('dv-ville',d.ville||'');
+  ST('dv-siret',`© 2026 CakeQuote${d.siret?' — SIRET : '+d.siret:''}`);
+}
+function updDv(){
+  injBout();
+  const num=GV('b-devis-num')||String(ndv).padStart(3,'0');
+  ST('dv-ref','DEVIS '+num);
+  ST('dv-date',new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}));
+  ST('dv-cnom',GV('client-nom')||'—');ST('dv-cemail',GV('client-email')||'—');
+  ST('dv-ctel',GV('client-tel')||'—');ST('dv-cdate',GV('client-date')||'—');
+  ST('dv-theme',GV('cake-theme')||'—');ST('dv-saveur',GV('cake-saveur')||'—');
+  ST('dv-etages',GV('cake-etages')||'—');ST('dv-parts',GV('cake-parts-ref')||GV('parts')||'—');
+  const pb=S['p'+S.px.charAt(0)]||S.pr;
+  const tvp=parseFloat(E('tva-actif')?.value)||0;
+  const tva=pb*(tvp/100);const ttc=pb+tva;
+  const perso=GN('opt-perso'),liv=GN('opt-livraison'),base=pb-perso-liv;
+  const tbody=E('dv-lignes');
+  if(tbody){
+    let h=`<tr><td style="padding:7px 0;font-size:11px">Création pâtissière</td><td style="text-align:right;padding:7px 0;font-size:11px;font-weight:500">${EUR(base)}</td></tr>`;
+    if(perso>0)h+=`<tr><td style="padding:7px 0;font-size:11px">Personnalisation</td><td style="text-align:right;padding:7px 0;font-size:11px;font-weight:500">${EUR(perso)}</td></tr>`;
+    if(liv>0)h+=`<tr><td style="padding:7px 0;font-size:11px">Livraison</td><td style="text-align:right;padding:7px 0;font-size:11px;font-weight:500">${EUR(liv)}</td></tr>`;
+    tbody.innerHTML=h;
+  }
+  ST('dv-ht',EUR(pb));
+  const tvl=E('dv-tvaline');
+  if(tvp>0){ST('dv-tvalbl','TVA '+tvp+'%');ST('dv-tvaval',EUR(tva));if(tvl)tvl.style.display='flex';}
+  else{if(tvl)tvl.style.display='none';}
+  ST('dv-total',EUR(ttc));
+  const ap=GN('acompte-pct')/100;
+  const mi=E('dv-modal');
+  if(mi)mi.innerHTML=`
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--or);margin-bottom:10px;">Modalités de règlement</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:white;border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Acompte (${Math.round(ap*100)}%)</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--brun)">${EUR(ap*ttc)}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">À la réservation</div>
+      </div>
+      <div style="background:white;border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Solde</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--brun)">${EUR(ttc-(ap*ttc))}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">7 jours avant</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:12px;margin-top:10px;">
+      <span style="font-size:10px;color:var(--muted)">💳 CB</span>
+      <span style="font-size:10px;color:var(--muted)">🏦 Virement</span>
+      <span style="font-size:10px;color:var(--muted)">📱 PayPal</span>
+    </div>
+  `;
+}
+
+// BOUTIQUE
+function saveBoutique(){
+  const d={nom:GV('b-nom'),email:GV('b-email'),tel:GV('b-tel'),ville:GV('b-ville'),siret:GV('b-siret')};
+  localStorage.setItem('cq_bout',JSON.stringify(d));
+  ['nom','email','tel','ville','siret'].forEach(k=>{const e=E('p-'+k);if(e)e.value=d[k];});
+}
+function syncP(){
+  const d={nom:GV('p-nom'),email:GV('p-email'),tel:GV('p-tel'),ville:GV('p-ville'),siret:GV('p-siret')};
+  localStorage.setItem('cq_bout',JSON.stringify(d));
+  ['nom','email','tel','ville','siret'].forEach(k=>{const e=E('b-'+k);if(e)e.value=d[k];});
+}
+function loadBout(){
+  const d=JSON.parse(localStorage.getItem('cq_bout')||'{}');
+  if(!d.nom)return;
+  ['nom','email','tel','ville','siret'].forEach(k=>{
+    const b=E('b-'+k);if(b)b.value=d[k]||'';
+    const p=E('p-'+k);if(p)p.value=d[k]||'';
+  });
+}
+
+// HISTORIQUE
+function toggleHisto(){const m=E('histo-modal');m.classList.toggle('open');if(m.classList.contains('open'))affHisto();}
+function affHisto(){
+  const l=E('histo-liste');
+  if(!histo.length){l.innerHTML='<p style="color:var(--muted);font-size:12px;font-style:italic">Aucun devis.</p>';return;}
+  l.innerHTML=[...histo].reverse().map(d=>`
+    <div class="hc">
+      <div class="hcref">Devis ${d.num} — ${d.date}</div>
+      <div class="hcnom">${d.client.nom||'—'}</div>
+      <div class="hcdet">${d.cake.parts} · ${d.cake.etages}${d.client.date?` · 📅 ${d.client.date}`:''}</div>
+      <div class="hcttc">${EUR(d.prix.ttc)}</div>
+      <div class="hcbtns">
+        <button class="hcbtn" style="background:rgba(200,151,58,.12);color:var(--or)" onclick="voirDv(${d.id})">👁️ Voir</button>
+        <button class="hcbtn" style="background:rgba(74,124,89,.12);color:var(--vert)" onclick="envoyerMail(${d.id})">✉️ Mail</button>
+        <button class="hcbtn btn-d" onclick="supDv(${d.id})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+function sauvegarder(){
+  const pb=S['p'+S.px.charAt(0)]||S.pr;
+  const tvp=parseFloat(E('tva-actif')?.value)||0;
+  const ttc=pb*(1+tvp/100);
+  const num=GV('b-devis-num')||String(ndv).padStart(3,'0');
+  const d={id:Date.now(),num,date:new Date().toLocaleDateString('fr-FR'),
+    client:{nom:GV('client-nom'),email:GV('client-email'),tel:GV('client-tel'),date:GV('client-date')},
+    boutique:{nom:GV('b-nom')||GV('p-nom'),email:GV('b-email'),tel:GV('b-tel'),ville:GV('b-ville'),siret:GV('b-siret')},
+    cake:{theme:GV('cake-theme')||'—',saveur:GV('cake-saveur')||'—',etages:GV('cake-etages')||'—',parts:GV('cake-parts-ref')||GV('parts')||'—'},
+    prix:{ht:pb,tvp,tva:pb*(tvp/100),ttc},
+    options:{perso:GN('opt-perso'),livraison:GN('opt-livraison')}
+  };
+  histo.push(d);localStorage.setItem('cq_histo',JSON.stringify(histo));
+  if(GV('client-date')){
+    planCmds.push({id:Date.now()+1,nom:GV('cake-theme')||GV('client-nom')||'Commande',date:GV('client-date'),heures:GN('heures'),prix:pb,source:'devis'});
+    savePlan();
+  }
+  ndv++;const ne=E('b-devis-num');if(ne)ne.value='2026-'+String(ndv).padStart(3,'0');
+  // Voyant vert ✅
+  const btn=E('btn-sauvegarder');
+  if(btn){
+    btn.textContent='✅ Sauvegardé !';
+    btn.style.background='linear-gradient(135deg,#4A7C59,#2A5A3A)';
+    setTimeout(()=>{btn.textContent='💾 Sauvegarder';btn.style.background='';},3000);
+  }
+}
+function envoyerMail(id){
+  const d=histo.find(x=>x.id===id);if(!d)return;
+  
+  // Debug — voir ce qu'on a
+  console.log('Devis trouvé:', d);
+  console.log('Email client:', d.client?.email);
+  
+  const email = d.client?.email || '';
+  if(!email || email.trim()===''){
+    alert('⚠️ Email client : "' + email + '"\nVeuillez vérifier que l\'email a bien été saisi avant de sauvegarder le devis.');
+    return;
+  }
+
+  const lienDevis=`https://stately-medovik-9cc913.netlify.app/cakequote-v2?id=${d.id}`;
+  const acompte=(d.prix.ttc*0.3).toFixed(2).replace('.',',');
+  const solde=(d.prix.ttc*0.7).toFixed(2).replace('.',',');
+
+  const params={
+    to_email: email,
+    to_name: d.client.nom||'',
+    devis_num: d.num,
+    devis_date: d.date,
+    devis_details: `Thème : ${d.cake.theme||'—'} | Saveur : ${d.cake.saveur||'—'} | ${d.cake.etages||'—'} | ${d.cake.parts||'—'} parts`,
+    devis_total: EUR(d.prix.ttc),
+    devis_modalites: `Acompte : ${acompte}€ (30%) — Solde : ${solde}€`,
+    devis_lien: lienDevis,
+    boutique_nom: d.boutique.nom||'',
+    boutique_email: d.boutique.email||'',
+    boutique_tel: d.boutique.tel||''
+  };
+
+  const btn=document.querySelector(`button[onclick="envoyerMail(${id})"]`);
+  if(btn){btn.textContent='⏳ Envoi...';btn.disabled=true;}
+
+  emailjs.send('service_rqg5a2r','template_t3ab6ci',params)
+    .then(()=>{
+      if(btn){btn.textContent='✅ Envoyé !';btn.style.color='var(--vert)';}
+      setTimeout(()=>{if(btn){btn.textContent='✉️ Mail';btn.style.color='';btn.disabled=false;}},3000);
+    })
+    .catch(err=>{
+      console.error(err);
+      if(btn){btn.textContent='❌ Erreur';btn.disabled=false;}
+      setTimeout(()=>{if(btn){btn.textContent='✉️ Mail';btn.style.color='';}},3000);
+    });
+}
+
+function supDv(id){histo=histo.filter(d=>d.id!==id);localStorage.setItem('cq_histo',JSON.stringify(histo));affHisto();}
+
+function voirDv(id){
+  const d=histo.find(x=>x.id===id);if(!d)return;
+  // Injecter les données du devis dans la vue
+  ST('dv-ref','DEVIS '+d.num);
+  ST('dv-date',d.date);
+  ST('dv-bnom',d.boutique.nom||'Votre boutique');
+  ST('dv-email',d.boutique.email||'');
+  ST('dv-tel',d.boutique.tel||'');
+  ST('dv-ville',d.boutique.ville||'');
+  ST('dv-cnom',d.client.nom||'—');
+  ST('dv-cemail',d.client.email||'—');
+  ST('dv-ctel',d.client.tel||'—');
+  ST('dv-cdate',d.client.date||'—');
+  ST('dv-theme',d.cake.theme||'—');
+  ST('dv-saveur',d.cake.saveur||'—');
+  ST('dv-etages',d.cake.etages||'—');
+  ST('dv-parts',d.cake.parts||'—');
+  // Lignes
+  const tbody=E('dv-lignes');
+  if(tbody){
+    const base=d.prix.ht-(d.options?.perso||0)-(d.options?.livraison||0);
+    let h=`<tr><td style="padding:7px 0;font-size:11px">Création pâtissière</td><td style="text-align:right;padding:7px 0;font-size:11px;font-weight:500">${EUR(base)}</td></tr>`;
+    if(d.options?.perso>0)h+=`<tr><td style="padding:7px 0;font-size:11px">Personnalisation</td><td style="text-align:right;padding:7px 0;font-size:11px;font-weight:500">${EUR(d.options.perso)}</td></tr>`;
+    if(d.options?.livraison>0)h+=`<tr><td style="padding:7px 0;font-size:11px">Livraison</td><td style="text-align:right;padding:7px 0;font-size:11px;font-weight:500">${EUR(d.options.livraison)}</td></tr>`;
+    tbody.innerHTML=h;
+  }
+  ST('dv-ht',EUR(d.prix.ht));
+  const tvl=E('dv-tvaline');
+  if(d.prix.tvp>0){ST('dv-tvalbl','TVA '+d.prix.tvp+'%');ST('dv-tvaval',EUR(d.prix.tva));if(tvl)tvl.style.display='flex';}
+  else{if(tvl)tvl.style.display='none';}
+  ST('dv-total',EUR(d.prix.ttc));
+  ST('dv-siret',`Ce devis est valable 15 jours${d.boutique.siret?' — SIRET : '+d.boutique.siret:''} — © 2026 CakeQuote`);
+  const mi=E('dv-modal');
+  if(mi){const ap=d.prix.ttc*0.3;mi.innerHTML=`<strong>Modalités :</strong> Acompte ${EUR(ap)} (30%) · Solde ${EUR(d.prix.ttc-ap)} · CB / Virement / PayPal`;}
+  // Fermer l'historique et aller au devis
+  toggleHisto();swSec('devis');goTo(6);
+}
+function exportExcel(){
+  if(!histo.length){alert('Aucun devis à exporter !');return;}
+
+  const sep=';';
+  const lignes=[
+    ['N° Devis','Date','Client','Email','Téléphone','Date événement','Thème','Saveur','Étages','Parts','Total HT','TVA %','Total TTC'].join(sep),
+    ...histo.map(d=>[
+      d.num,d.date,d.client.nom||'',d.client.email||'',d.client.tel||'',
+      d.client.date||'',d.cake.theme||'',d.cake.saveur||'',d.cake.etages||'',d.cake.parts||'',
+      d.prix.ht?.toFixed(2)||'',d.prix.tvp||'0',d.prix.ttc?.toFixed(2)||''
+    ].join(sep))
+  ];
+
+  const csv='\uFEFF'+lignes.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+
+  // Sur iPhone ouvrir dans un nouvel onglet
+  window.open(url,'_blank');
+}
+
+function vidHisto(){if(confirm('Supprimer tous les devis ?')){histo=[];localStorage.removeItem('cq_histo');affHisto();}}
+function nvDevis(){
+  ['matieres','packaging','opt-perso','opt-livraison','opt-notes','client-nom','client-email','client-tel','client-date','cake-theme','cake-saveur','cake-parts-ref'].forEach(id=>{const e=E(id);if(e)e.value='';});
+  E('parts').value='12';S.cc=1;S.cn=1;S.cd=1;S.px='serein';
+  document.querySelectorAll('.rc').forEach((e,i)=>e.classList.toggle('sel',i%4===0));
+  document.querySelectorAll('.pc').forEach(e=>e.classList.toggle('sel',e.classList.contains('serein')));
+  ndv++;const ne=E('b-devis-num');if(ne)ne.value='2026-'+String(ndv).padStart(3,'0');
+  calcul();toggleHisto();swSec('devis');goTo(1);
+}
+
+// ATELIER — INGRÉDIENTS
+let resv=JSON.parse(localStorage.getItem('cq_res')||'[]');
+let rece=JSON.parse(localStorage.getItem('cq_rece')||'[]');
+
+function saveRes(){localStorage.setItem('cq_res',JSON.stringify(resv));updSel();rRes();}
+function saveRece(){localStorage.setItem('cq_rece',JSON.stringify(rece));}
+function ajRes(){
+  const n=E('res-nom')?.value.trim(),p=parseFloat(E('res-prix')?.value),u=E('res-unite')?.value;
+  if(!n||isNaN(p))return;
+  resv.push({id:Date.now(),nom:n,prix:p,unite:u,qteBase:0});saveRes();
+  E('res-nom').value='';E('res-prix').value='';
+}
+function rRes(){
+  const el=E('res-liste');if(!el)return;
+  if(!resv.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:7px">Enregistrés</div>`+
+  resv.map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:7px">
+      <span style="font-size:13px;color:var(--brun);font-weight:500;flex:2">${r.nom}</span>
+      <span style="font-size:12px;color:var(--or);font-weight:600">${r.prix}€/${r.unite}</span>
+      <button style="background:rgba(200,151,58,.12);color:var(--or);border:1px solid rgba(200,151,58,.3);padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer" onclick="modifierPrix(${r.id})">✏️</button>
+      <button class="btn-d" onclick="supRes(${r.id})">✕</button>
+    </div>
+    <div id="edit-${r.id}" style="display:none;margin-top:8px;display:none">
+      <div style="display:flex;gap:6px">
+        <input type="number" id="np-${r.id}" placeholder="Nouveau prix" value="${r.prix}" step="0.01" style="flex:1;padding:6px 10px;border:1.5px solid var(--or);border-radius:6px;font-size:12px;background:#fff">
+        <button style="background:var(--or);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer" onclick="validerPrix(${r.id})">✓</button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+function modifierPrix(id){
+  const el=E('edit-'+id);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function validerPrix(id){
+  const np=parseFloat(E('np-'+id)?.value);
+  if(!np||np<=0)return;
+  const item=resv.find(r=>r.id==id);
+  if(item){item.prix=np;saveRes();}
+}
+function ajQte(id){const q=parseFloat(E('eq'+id)?.value);if(!q)return;const i=resv.find(r=>r.id==id);if(i){i.qteBase=q;saveRes();}}
+function supRes(id){resv=resv.filter(r=>r.id!==id);saveRes();}
+function updSel(){
+  const s=E('rec-sel');if(!s)return;
+  s.innerHTML='<option value="">Choisir...</option>';
+  resv.forEach(r=>s.innerHTML+=`<option value="${r.id}">${r.nom} (${r.prix}€/${r.unite})</option>`);
+}
+function autoQ(){
+  const id=E('rec-sel')?.value;const i=resv.find(r=>r.id==id);const l=E('qunit');
+  if(i){
+    E('rec-qte').value='';
+    if(l)l.textContent=i.unite==='kg'?'(g)':i.unite==='L'?'(ml)':'(u.)';
+  }
+}
+function ajRec(){
+  const id=E('rec-sel')?.value;const q=parseFloat(E('rec-qte')?.value);const i=resv.find(r=>r.id==id);
+  if(!i||isNaN(q))return;
+  let p=0,u='';
+  if(i.unite==='kg'||i.unite==='L'){p=(i.prix/1000)*q;u=i.unite==='kg'?'g':'ml';}
+  else{p=i.prix*q;u='u.';}
+  rece.push({nom:i.nom,qte:q,unite:u,prix:p});rRec();
+  if(E('rec-qte'))E('rec-qte').value='';
+}
+function rRec(){
+  const b=E('rec-body');if(!b)return;
+  b.innerHTML=rece.map((r,i)=>`<tr><td style="font-weight:500">${r.nom}</td><td style="color:var(--muted)">${r.qte} ${r.unite}</td><td class="amt">${r.prix.toFixed(2)} €</td><td><button class="btn-d" onclick="rece.splice(${i},1);saveRece();rRec()">✕</button></td></tr>`).join('');
+  saveRece();
+  calcTotal();rcConv();rGraph();
+}
+function calcTotal(){
+  const s=rece.reduce((a,c)=>a+c.prix,0);
+  const p=parseFloat(E('perte-pct')?.value||5)/100;
+  ST('total-mat',(s*(1+p)).toFixed(2).replace('.',',')+' €');
+}
+function importerConv(){
+  const db=parseFloat(E('db')?.value)||1,dc=parseFloat(E('dc')?.value)||1;
+  const ratio=(dc*dc)/(db*db);
+  let tot=0;
+  rece.forEach(r=>{
+    const isU=r.unite==='u.';
+    const ratio2=isU?dc/db:ratio;
+    tot+=r.prix*ratio2;
+  });
+  const perte=parseFloat(E('perte-pct')?.value||5)/100;
+  const total=tot*(1+perte);
+  const el=E('matieres');
+  if(el){el.value=total.toFixed(2);calcul();}
+  swSec('devis');
+  alert('✅ Coût converti importé dans le Devis !');
+}
+
+function importDevis(){
+  const s=rece.reduce((a,c)=>a+c.prix,0);
+  const p=parseFloat(E('perte-pct')?.value||5)/100;
+  const t=s*(1+p);const el=E('matieres');
+  if(el){el.value=t.toFixed(2);calcul();}
+  swSec('devis');alert('✅ Importé dans le Devis !');
+}
+
+// ATELIER — CONVERTISSEUR
+function rcConv(){
+  const db=parseFloat(E('db')?.value)||1,dc=parseFloat(E('dc')?.value)||1;
+  const ratio=(dc*dc)/(db*db);
+  const rd=E('ratio-disp');if(rd)rd.innerHTML=`Ratio : <strong>${ratio.toFixed(2)}×</strong>`;
+  const td=E('th-db');if(td)td.textContent=db;const tc=E('th-dc');if(tc)tc.textContent=dc;
+  const body=E('conv-body'),empty=E('conv-empty'),table=E('conv-table');
+  if(!body)return;
+  if(!rece.length){if(empty)empty.style.display='block';if(table)table.style.display='none';ST('conv-total','0,00 €');return;}
+  if(empty)empty.style.display='none';if(table)table.style.display='table';
+  let tot=0;
+  body.innerHTML=rece.map(r=>{
+    const isU=r.unite==='u.';const ratio2=isU?dc/db:ratio;
+    const nq=isU?Math.ceil(r.qte*ratio2):Math.round(r.qte*ratio2);const np=r.prix*ratio2;tot+=np;
+    return `<tr><td style="font-weight:500">${r.nom}</td><td style="color:var(--muted)">${r.qte}${r.unite}</td><td style="font-weight:600">${nq}${r.unite}</td><td class="amt">${np.toFixed(2)}€</td></tr>`;
+  }).join('');
+  ST('conv-total',tot.toFixed(2).replace('.',',')+' €');
+}
+
+// ATELIER — CHRONO
+let chSec=0,chTmr=null,chRun=false;
+const MOTIV=[{m:20,t:"🎂 C'est parti !"},{m:40,t:"💪 Dans le flow !"},{m:60,t:"⏰ Moitié du temps. Focus !"},{m:80,t:"🔥 Plus que 20% !"},{m:100,t:"✅ Dans les temps !"},{m:120,t:"⚠️ Légèrement dépassé."},{m:999,t:"🚨 Dépassement important !"}];
+function togCh(){
+  const b=E('ch-btn');
+  if(!chRun){chRun=true;b.textContent='⏸ Pause';chTmr=setInterval(()=>{chSec++;updChD();updChP();},1000);}
+  else{chRun=false;b.textContent='▶ Reprendre';clearInterval(chTmr);}
+}
+function resetCh(){clearInterval(chTmr);chRun=false;chSec=0;E('ch-btn').textContent='▶ Démarrer';ST('ch-disp','00:00:00');ST('ch-motiv','Prêt à démarrer 🎂');const p=E('ch-prog');if(p)p.style.width='0%';ST('ch-pct','0% du temps prévu');const a=E('ch-analyse');if(a)a.style.display='none';}
+function stopCh(){clearInterval(chTmr);chRun=false;E('ch-btn').textContent='▶ Démarrer';afCh();}
+function updChD(){const h=Math.floor(chSec/3600),m=Math.floor((chSec%3600)/60),s=chSec%60;ST('ch-disp',`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);}
+function updChP(){
+  const pv=(parseFloat(E('ch-prev')?.value)||5)*3600;const pct=Math.round((chSec/pv)*100);
+  const p=E('ch-prog');if(p){p.style.width=Math.min(100,pct)+'%';p.style.background=pct>100?'var(--rouge)':'var(--or)';}
+  ST('ch-pct',pct+'% du temps prévu');const m=MOTIV.find(x=>pct<=x.m);if(m)ST('ch-motiv',m.t);
+}
+function afCh(){
+  const pv=(parseFloat(E('ch-prev')?.value)||5)*3600,tx=parseFloat(E('ch-taux')?.value)||20;
+  const gp=(pv/3600)*tx,tr=chSec>0?(gp/(chSec/3600)).toFixed(2):tx,dif=chSec-pv;
+  ST('an-prev',Math.floor(pv/3600)+'h '+Math.floor((pv%3600)/60)+'m');
+  ST('an-reel',Math.floor(chSec/3600)+'h '+Math.floor((chSec%3600)/60)+'m');
+  ST('an-gain',gp.toFixed(2)+' €');ST('an-taux',tr+' €/h');
+  let v='';
+  if(dif<-1800)v=`✨ <strong>Bravo !</strong> ${Math.round(Math.abs(dif)/60)}min gagnées !`;
+  else if(dif<0)v=`✅ <strong>Dans les temps !</strong>`;
+  else if(dif<3600)v=`⚠️ +${Math.round(dif/60)}min. Taux réel : ${tr}€/h`;
+  else v=`🚨 +${Math.round(dif/3600*10)/10}h. Taux réel : ${tr}€/h. Ajustez vos tarifs !`;
+  const vd=E('an-verdict');if(vd)vd.innerHTML=v;
+  const a=E('ch-analyse');if(a){a.style.display='block';a.scrollIntoView({behavior:'smooth'});}
+}
+
+// ATELIER — PITCH
+function genPitch(){
+  const p=parseFloat(E('pt-prix')?.value),h=parseFloat(E('pt-h')?.value);
+  if(isNaN(p)||isNaN(h))return;
+  const tx=(p/h).toFixed(2);
+  const cx=E('pt-cx')?.value,nv=E('pt-nv')?.value;
+  const nvT={debutante:'cake designer passionnée',intermediaire:'cake designer expérimentée',confirmee:'cake designer confirmée',experte:'cake designer experte'}[nv];
+  const cxT={simple:'des techniques soignées',moyen:'des techniques intermédiaires',complexe:'des techniques complexes',expert:'des techniques expertes signature'}[cx];
+  const r=E('pt-res');if(r)r.style.display='block';
+  ST('pt-a1',`"Ce gâteau représente ${h}h de travail minutieux avec ${cxT}. Chaque détail est fait à la main. Mon tarif reflète la valeur réelle de ce travail artisanal."`);
+  ST('pt-a2',`"Avec moi vous avez ${h}h de création, des ingrédients de qualité et mon expertise de ${nvT}. Un prix bas cache souvent des compromis sur la qualité."`);
+  ST('pt-a3',`"Mon devis est calculé au plus juste. Ce que je peux proposer : simplifier le design ou réduire le nombre de parts pour rester dans votre budget."`);
+  const rp=E('pt-rp');if(rp)rp.innerHTML=`Taux : <strong style="color:var(--or)">${tx}€/h</strong> · Baisser de 10% = perdre <strong style="color:#E88A8A">${(p*.1).toFixed(2)}€</strong><br><em style="opacity:.7">Tenez bon. Votre talent a une valeur.</em>`;
+}
+
+// ATELIER — GRAPHIQUE
+function rGraph(){
+  const dd=JSON.parse(localStorage.getItem('cq_dd')||'{}');
+  const h=parseFloat(E('gh')?.value)||dd.heures||0;
+  const t=parseFloat(E('gt')?.value)||dd.taux||0;
+  const pkg=parseFloat(E('gp')?.value)||dd.packaging||0;
+  const pv=parseFloat(E('gpx')?.value)||dd.prixSerein||0;
+  if(!E('gh')?.value&&dd.heures){if(E('gh'))E('gh').value=dd.heures;if(E('gt'))E('gt').value=dd.taux||20;if(E('gp'))E('gp').value=dd.packaging||0;if(E('gpx')&&dd.prixSerein)E('gpx').value=dd.prixSerein.toFixed(2);}
+  const pp=parseFloat(E('perte-pct')?.value||5)/100;
+  const mat=dd.matieres||rece.reduce((a,c)=>a+c.prix,0)*(1+pp);
+  const mo=h*t;
+  const sv=E('gvide'),sl=E('gslices'),lg=E('gleg'),tot=E('gctot'),rc=E('grec-card');
+  if(mat===0&&mo===0&&pkg===0){if(sv)sv.style.display='block';if(sl)sl.innerHTML='';if(lg)lg.innerHTML='';if(rc)rc.style.display='none';return;}
+  if(sv)sv.style.display='none';
+  const ct=mat+mo+pkg,bn=pv>ct?pv-ct:0,bs=pv>0?pv:ct;
+  if(tot)tot.textContent=(pv||ct).toFixed(2).replace('.',',')+' €';
+  const segs=[{l:'🥕 Matières',v:mat,c:'#C8973A'},{l:"⏱️ Main d'œuvre",v:mo,c:'#2E1B0E'},{l:'📦 Packaging',v:pkg,c:'#4A7C59'},{l:'💰 Bénéfice',v:bn,c:'#D4A0A0'}].filter(s=>s.v>0);
+  const cx=95,cy=95,r=80,ri=45;let sa=-Math.PI/2,hs='',hl='';
+  segs.forEach(sg=>{
+    const pc=sg.v/bs,ag=pc*2*Math.PI,ea=sa+ag;
+    const x1=cx+r*Math.cos(sa),y1=cy+r*Math.sin(sa),x2=cx+r*Math.cos(ea),y2=cy+r*Math.sin(ea);
+    const xi1=cx+ri*Math.cos(sa),yi1=cy+ri*Math.sin(sa),xi2=cx+ri*Math.cos(ea),yi2=cy+ri*Math.sin(ea);
+    const la=ag>Math.PI?1:0;
+    hs+=`<path d="M ${xi1} ${yi1} L ${x1} ${y1} A ${r} ${r} 0 ${la} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${ri} ${ri} 0 ${la} 0 ${xi1} ${yi1} Z" fill="${sg.c}" opacity=".9"/>`;
+    hl+=`<div class="cli"><div class="cld" style="background:${sg.c}"></div><div style="flex:1;font-size:11px;color:var(--brun);font-weight:500">${sg.l}</div><div style="font-size:11px;color:var(--or);font-weight:600">${Math.round(pc*100)}%</div><div style="font-size:11px;color:var(--muted)">${sg.v.toFixed(2)}€</div></div>`;
+    sa=ea;
+  });
+  if(sl)sl.innerHTML=hs;if(lg)lg.innerHTML=hl;
+  if(rc)rc.style.display='block';
+  const gr=E('grec');if(gr)gr.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">COÛT REVIENT</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--brun);font-weight:600">${ct.toFixed(2)} €</div></div>
+      <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">PRIX VENTE</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--brun);font-weight:600">${pv>0?pv.toFixed(2)+' €':'—'}</div></div>
+      <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">BÉNÉFICE</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:${bn>0?'var(--or)':'var(--rouge)'};font-weight:600">${bn.toFixed(2)} €</div></div>
+      <div style="background:var(--creme);border-radius:10px;padding:11px;text-align:center"><div style="font-size:9px;color:var(--muted);margin-bottom:2px">TAUX/H</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--or);font-weight:600">${h>0?(pv>0?(pv/h).toFixed(2):(ct/h).toFixed(2)):'—'} €/h</div></div>
+    </div>
+    ${bn<=0&&pv>0?`<div style="background:rgba(192,64,64,.1);border-radius:8px;padding:11px;border-left:3px solid var(--rouge);font-size:11px;color:var(--rouge)">⚠️ Vous travaillez à perte !</div>`:''}
+    ${bn>0?`<div style="background:rgba(74,124,89,.1);border-radius:8px;padding:11px;border-left:3px solid var(--vert);font-size:11px;color:#2A5A3A">✅ Bénéfice : ${bn.toFixed(2)}€ (${Math.round((bn/pv)*100)}% de marge)</div>`:''}
+  `;
+}
+
+// PLANNING
+let planCmds=JSON.parse(localStorage.getItem('cq_plan')||'[]');
+let planMois=new Date();
+function savePlan(){localStorage.setItem('cq_plan',JSON.stringify(planCmds));}
+function ajCmd(){
+  const n=E('pl-nom')?.value.trim(),d=E('pl-date')?.value,h=parseFloat(E('pl-h')?.value),p=parseFloat(E('pl-px')?.value)||0;
+  if(!n||!d||isNaN(h))return;
+  planCmds.push({id:Date.now(),nom:n,date:d,heures:h,prix:p,source:'manuel'});savePlan();rPlan();
+  E('pl-nom').value='';E('pl-date').value='';E('pl-h').value='';E('pl-px').value='';
+}
+function supCmd(id){planCmds=planCmds.filter(c=>c.id!==id);savePlan();rPlan();}
+function chMois(d){planMois=new Date(planMois.getFullYear(),planMois.getMonth()+d,1);rPlan();}
+function rPlan(){
+  const an=planMois.getFullYear(),mo=planMois.getMonth();
+  const MN=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  ST('pl-titre',MN[mo]+' '+an);
+  const hs=parseFloat(E('pl-sem')?.value)||2,hw=parseFloat(E('pl-we')?.value)||8;
+  const cm=planCmds.filter(c=>{const d=new Date(c.date);return d.getFullYear()===an&&d.getMonth()===mo;});
+  const pr=new Date(an,mo,1);let dec=pr.getDay()-1;if(dec<0)dec=6;
+  const nj=new Date(an,mo+1,0).getDate();
+  const cal=E('pl-cal');if(!cal)return;
+  const aj=new Date();let h='';
+  for(let i=0;i<dec;i++)h+='<div></div>';
+  for(let j=1;j<=nj;j++){
+    const dj=new Date(an,mo,j),isW=dj.getDay()===0||dj.getDay()===6,hd=isW?hw:hs;
+    const cj=cm.filter(c=>new Date(c.date).getDate()===j),th=cj.reduce((a,c)=>a+c.heures,0);
+    const ov=th>hd&&hd>0,oc=th>0,isT=dj.toDateString()===aj.toDateString();
+    const ds=`${an}-${String(mo+1).padStart(2,'0')}-${String(j).padStart(2,'0')}`;
+    h+=`<div class="cd${oc?' occ':''}${ov?' over':''}${isT?' tod':''}" onclick="${ov?`anConf('${ds}')`:``}">
+      <div class="cdnum" style="font-weight:${isT?700:500}">${j}</div>
+      ${oc?`<div class="cdh" style="color:${ov?'var(--rouge)':'var(--or)'}">${th}h${ov?' ⚠️':''}</div>`:''}
+    </div>`;
+  }
+  cal.innerHTML=h;
+  const liste=E('pl-liste');
+  if(!cm.length){liste.innerHTML='<p style="font-size:11px;color:var(--muted);font-style:italic">Aucune commande ce mois.</p>';return;}
+  cm.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  liste.innerHTML=cm.map(c=>{
+    const d=new Date(c.date),isW=d.getDay()===0||d.getDay()===6,hd=isW?hw:hs,ov=c.heures>hd;
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:12px;font-weight:600;color:var(--brun)">${c.nom}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">📅 ${d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} · ⏱️ ${c.heures}h${c.prix?' · 💰 '+c.prix+'€':''}</div>
+        ${ov?`<div style="font-size:10px;color:var(--rouge);margin-top:2px;cursor:pointer" onclick="anConf('${c.date}')">⚠️ Surcharge — <u>Analyser</u></div>`:''}
+        </div>
+        <button class="btn-d" onclick="supCmd(${c.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function anConf(date){
+  const cj=planCmds.filter(c=>c.date===date);if(cj.length<2)return;
+  const at=cj.map(c=>({...c,th:c.prix>0&&c.heures>0?c.prix/c.heures:0}));
+  const pP=[...at].sort((a,b)=>b.prix-a.prix),pT=[...at].sort((a,b)=>a.heures-b.heures),pTh=[...at].sort((a,b)=>b.th-a.th);
+  const d=new Date(date),ds=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  const cont=E('conflit-cont');if(!cont)return;
+  cont.innerHTML=`<div style="font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--brun);margin-bottom:9px">⚠️ Surcharge — ${ds}</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px">${cj.length} commandes ce jour. Laquelle garder ?</p>
+    <div style="background:var(--or-pale);border-radius:10px;padding:12px;margin-bottom:9px;border-left:4px solid var(--or)">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--or);margin-bottom:3px">💰 MEILLEURE RENTABILITÉ/H</div>
+      <div style="font-size:13px;font-weight:600;color:var(--brun)">${pTh[0].nom}</div>
+      <div style="font-size:11px;color:var(--muted)">${pTh[0].prix}€ · ${pTh[0].heures}h · <strong style="color:var(--or)">${pTh[0].th.toFixed(2)}€/h</strong></div>
+    </div>
+    <div style="background:var(--creme);border-radius:10px;padding:12px;margin-bottom:9px;border-left:4px solid var(--brun)">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--brun);margin-bottom:3px">💵 PRIX LE PLUS ÉLEVÉ</div>
+      <div style="font-size:13px;font-weight:600;color:var(--brun)">${pP[0].nom}</div>
+      <div style="font-size:11px;color:var(--muted)">${pP[0].prix}€ · ${pP[0].heures}h</div>
+    </div>
+    <div style="background:var(--creme);border-radius:10px;padding:12px;margin-bottom:14px;border-left:4px solid var(--vert)">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--vert);margin-bottom:3px">⏱️ MOINS DE TEMPS</div>
+      <div style="font-size:13px;font-weight:600;color:var(--brun)">${pT[0].nom}</div>
+      <div style="font-size:11px;color:var(--muted)">${pT[0].heures}h · ${pT[0].prix}€</div>
+    </div>
+    ${at.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:500;color:var(--brun)">${c.nom}</div><div style="font-size:10px;color:var(--muted)">${c.heures}h · ${c.prix}€${c.th>0?' · '+c.th.toFixed(2)+'€/h':''}</div></div><button class="btn-d" onclick="supCmd(${c.id});fConflit()">Retirer</button></div>`).join('')}
+    <button class="btn btn-s" style="margin-top:12px" onclick="fConflit()">Fermer</button>`;
+  E('conflit-modal').classList.add('open');
+}
+function fConflit(){E('conflit-modal').classList.remove('open');rPlan();}
+
+// INIT
+try{
+  // Vérifier si on est sur la page devis client
+  if(window.location.search.includes('id=')){
+    // Cacher l'appli principale et afficher le devis client
+    document.body.innerHTML = '';
+    chargerDevisClient();
+  } else {
+    loadBout();
+    updS('heures','hv','h');updS('taux','tv','€/h');
+    const ne=E('b-devis-num');if(ne)ne.value='2026-'+String(ndv).padStart(3,'0');
+    ST('dv-date',new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}));
+    ST('dv-ref','DEVIS '+String(ndv).padStart(3,'0'));
+    updSel();rRes();rPlan();calcul();
+  }
+}catch(e){console.log(e);}
+
+// PAGE DEVIS CLIENT
+function chargerDevisClient(){
+  const id=new URLSearchParams(window.location.search).get('id');
+  const histo=JSON.parse(localStorage.getItem('cq_histo')||'[]');
+  const d=histo.find(x=>String(x.id)===String(id));
+  const EUR=n=>typeof n==='number'?n.toFixed(2).replace('.',',')+' €':'—';
+
+  if(!d){
+    document.body.style.cssText='font-family:Outfit,sans-serif;background:#FBF6EE;display:flex;align-items:center;justify-content:center;height:100vh;';
+    document.body.innerHTML='<div style="text-align:center;color:#8A7060;"><p style="font-size:20px;color:#C8973A;">⚠️</p><p style="margin-top:10px;">Devis introuvable</p></div>';
+    return;
+  }
+
+  const ap=d.prix.ttc*0.3;
+  document.title=`Devis ${d.num} — ${d.boutique.nom||'CakeQuote'}`;
+  document.body.style.cssText='margin:0;padding:20px;background:#FBF6EE;font-family:Outfit,sans-serif;';
+
+  document.body.innerHTML=`
+  <div style="max-width:600px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,.1);">
+
+    <div style="background:#5C3317;padding:24px;display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:#C8973A;font-weight:600;">${d.boutique.nom||'Votre boutique'}</div>
+        <div style="color:rgba(245,232,200,.35);font-size:9px;margin-top:2px;">Création sur mesure en pâtisserie</div>
+        <div style="color:rgba(245,232,200,.3);font-size:9px;margin-top:8px;line-height:1.8;">${d.boutique.email||''}<br>${d.boutique.tel||''}<br>${d.boutique.ville||''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:#C8973A;font-size:11px;font-weight:700;letter-spacing:1px;">DEVIS ${d.num}</div>
+        <div style="color:rgba(245,232,200,.35);font-size:10px;margin-top:4px;">${d.date}</div>
+        <div style="color:rgba(245,232,200,.2);font-size:9px;margin-top:3px;">VALABLE 15 JOURS</div>
+      </div>
+    </div>
+
+    <div style="padding:24px;">
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C8973A;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid rgba(200,151,58,.2);">Informations client</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;">
+          <div><div style="font-size:9px;color:#8A7060;">Nom</div><div style="font-size:12px;font-weight:500;">${d.client.nom||'—'}</div></div>
+          <div><div style="font-size:9px;color:#8A7060;">E-mail</div><div style="font-size:12px;font-weight:500;">${d.client.email||'—'}</div></div>
+          <div><div style="font-size:9px;color:#8A7060;">Téléphone</div><div style="font-size:12px;font-weight:500;">${d.client.tel||'—'}</div></div>
+          <div><div style="font-size:9px;color:#8A7060;">Date événement</div><div style="font-size:12px;font-weight:500;">${d.client.date||'—'}</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C8973A;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid rgba(200,151,58,.2);">Référence projet</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;">
+          <div><div style="font-size:9px;color:#8A7060;">Thème</div><div style="font-size:12px;font-weight:500;">${d.cake.theme||'—'}</div></div>
+          <div><div style="font-size:9px;color:#8A7060;">Saveur</div><div style="font-size:12px;font-weight:500;">${d.cake.saveur||'—'}</div></div>
+          <div><div style="font-size:9px;color:#8A7060;">Étages</div><div style="font-size:12px;font-weight:500;">${d.cake.etages||'—'}</div></div>
+          <div><div style="font-size:9px;color:#8A7060;">Parts</div><div style="font-size:12px;font-weight:500;">${d.cake.parts||'—'}</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C8973A;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid rgba(200,151,58,.2);">Détail prestation</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr><th style="text-align:left;font-size:9px;color:#8A7060;padding:7px 0;border-bottom:1.5px solid rgba(200,151,58,.2);">Désignation</th><th style="text-align:right;font-size:9px;color:#8A7060;padding:7px 0;border-bottom:1.5px solid rgba(200,151,58,.2);">Montant HT</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:8px 0;font-size:11px;">Création pâtissière</td><td style="padding:8px 0;font-size:11px;text-align:right;color:#C8973A;">${EUR(d.prix.ht-(d.options?.perso||0)-(d.options?.livraison||0))}</td></tr>
+            ${d.options?.perso>0?`<tr><td style="padding:8px 0;font-size:11px;">Personnalisation</td><td style="padding:8px 0;font-size:11px;text-align:right;color:#C8973A;">${EUR(d.options.perso)}</td></tr>`:''}
+            ${d.options?.livraison>0?`<tr><td style="padding:8px 0;font-size:11px;">Livraison</td><td style="padding:8px 0;font-size:11px;text-align:right;color:#C8973A;">${EUR(d.options.livraison)}</td></tr>`:''}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="background:#5C3317;border-radius:10px;padding:16px;margin-bottom:16px;">
+        ${d.prix.tvp>0?`<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:rgba(245,232,200,.5);font-size:11px;">Total HT</span><span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#E8C078;">${EUR(d.prix.ht)}</span></div><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:rgba(245,232,200,.5);font-size:11px;">TVA ${d.prix.tvp}%</span><span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#E8C078;">${EUR(d.prix.tva)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(200,151,58,.3);padding-top:10px;">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:15px;color:#F5E8C8;">Total TTC</span>
+          <span style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:#C8973A;">${EUR(d.prix.ttc)}</span>
+        </div>
+      </div>
+
+      <div style="background:#FBF6EE;border-radius:10px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C8973A;margin-bottom:10px;">Modalités de règlement</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:white;border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(200,151,58,.2);">
+            <div style="font-size:9px;color:#8A7060;margin-bottom:3px;text-transform:uppercase;">Acompte (30%)</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;">${EUR(ap)}</div>
+            <div style="font-size:9px;color:#8A7060;">À la réservation</div>
+          </div>
+          <div style="background:white;border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(200,151,58,.2);">
+            <div style="font-size:9px;color:#8A7060;margin-bottom:3px;text-transform:uppercase;">Solde</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;">${EUR(d.prix.ttc-ap)}</div>
+            <div style="font-size:9px;color:#8A7060;">7 jours avant</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:14px;margin-top:10px;">
+          <span style="font-size:11px;color:#8A7060;">💳 CB</span>
+          <span style="font-size:11px;color:#8A7060;">🏦 Virement</span>
+          <span style="font-size:11px;color:#8A7060;">📱 PayPal</span>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid rgba(200,151,58,.2);padding-top:14px;margin-bottom:16px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#5C3317;text-align:center;margin-bottom:10px;">Conditions Générales de Vente</div>
+        <div style="font-size:9px;color:#8A7060;line-height:1.7;">
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 1</strong> Devis valable 15 jours. Réservation confirmée après acompte.</p>
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 2</strong> Acompte exigé à la réservation. Solde dû 7 jours avant l'événement.</p>
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 3</strong> Acompte non remboursable. Annulation moins de 7j : solde reste dû.</p>
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 4</strong> Créations restent propriété du Prestataire pour communication.</p>
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 5</strong> Allergies à signaler avant confirmation.</p>
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 6</strong> Responsabilité cesse à la remise.</p>
+          <p style="margin-bottom:4px;"><strong style="color:#5C3317;">Art. 7</strong> Toute réclamation sous 24h avec photos.</p>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:16px 0;border-top:1px solid rgba(200,151,58,.2);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="60" height="60" style="display:block;margin:0 auto 8px;">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+          <ellipse cx="50" cy="82" rx="22" ry="3" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+          <path d="M28 66 Q50 62 72 66 L70 80 Q50 84 30 80 Z" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+          <path d="M28 66 Q35 60 42 66 Q50 60 58 66 Q65 60 72 66" fill="none" stroke="#C8973A" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M34 50 Q50 46 66 50 L64 64 Q50 68 36 64 Z" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+          <path d="M34 50 Q42 44 50 50 Q58 44 66 50" fill="none" stroke="#C8973A" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M40 36 Q50 32 60 36 L58 48 Q50 52 42 48 Z" fill="none" stroke="#C8973A" stroke-width="1.2"/>
+          <path d="M40 36 Q45 30 50 36 Q55 30 60 36" fill="none" stroke="#C8973A" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M46 32 Q44 26 47 28 Q50 31 50 32" fill="none" stroke="#C8973A" stroke-width="1" stroke-linecap="round"/>
+          <path d="M54 32 Q56 26 53 28 Q50 31 50 32" fill="none" stroke="#C8973A" stroke-width="1" stroke-linecap="round"/>
+          <circle cx="50" cy="25" r="1.5" fill="#C8973A"/>
+        </svg>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:#C8973A;letter-spacing:2px;">${d.boutique.nom||'CakeQuote'}</div>
+        <div style="font-size:8px;color:#8A7060;letter-spacing:1px;font-style:italic;margin-top:3px;">De la création à la facturation</div>
+        <div style="font-size:9px;color:#8A7060;margin-top:6px;">© 2026 CakeQuote${d.boutique.siret?' — SIRET : '+d.boutique.siret:''}</div>
+      </div>
+
+    </div>
+
+    <button onclick="window.print()" style="display:block;width:100%;background:linear-gradient(135deg,#C8973A,#906A10);color:white;padding:16px;font-family:Outfit,sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;letter-spacing:1px;">🖨️ Enregistrer en PDF</button>
+
+    <div style="background:#F5E8C8;padding:14px;text-align:center;">
+      <p style="font-size:11px;color:#5C3317;line-height:2;"><strong>Sur iPhone :</strong> ⬆️ Partager → Imprimer → Pincer l'aperçu → ⬆️ Partager → Enregistrer dans Fichiers</p>
+    </div>
+
+  </div>
+  <style>@media print{button,div:last-child{display:none!important;}}</style>
+  `;
+}
+</script>
+</body>
+</html>
